@@ -16,7 +16,7 @@ The following switches are supported:
 - -d [DSCP value]; default 46
 - -p [UDP port]; default 5060
 - -c [number of packets to send]; default 5
-- -l toggle logging messages (sent/received) to file
+- -l toggle logging messages to file
 - -h help
 - -l log
 
