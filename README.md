@@ -12,13 +12,13 @@ There are no explicit or implied guarantees or warranties with this script. See 
 The switch requires a target host IP specified using the -t switch.
 
 The following switches are supported:
--t [target IP host]
--d [DSCP value]; default 46
--p [UDP port]; default 5060
--c [number of packets to send]; default 5
--l toggle logging messages (sent/received) to file
--h help
--l log
+- -t [target IP host]
+- -d [DSCP value]; default 46
+- -p [UDP port]; default 5060
+- -c [number of packets to send]; default 5
+- -l toggle logging messages (sent/received) to file
+- -h help
+- -l log
 
 Note: logging only logs the messages sent as a record. Additional logging may be added in the future.
 
