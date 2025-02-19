@@ -34,7 +34,7 @@ def get_cli_switches():
 
     cli_parser.add_argument('-v', '--version',
                             action = 'version',
-                            version = '%(prog)s 1.0.0')
+                            version = '%(prog)s 1.0.1')
     cli_parser.add_argument('-t',
                             dest = 'target',
                             type = str,
@@ -218,6 +218,11 @@ def send_packets(args):
             host = socket.gethostname()
         except:
             host = 'hostname_undefined'
+
+        # create logging filehandle
+        if args['log']:
+            sent_msgs_file = 'dscp_sent_messages.txt'
+            sent_fh = open(sent_msgs_file, 'a')
 
         # create socket
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
