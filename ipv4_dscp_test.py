@@ -34,7 +34,7 @@ def get_cli_switches():
 
     cli_parser.add_argument('-v', '--version',
                             action = 'version',
-                            version = '%(prog)s 1.0.1')
+                            version = '%(prog)s 1.0.2')
     cli_parser.add_argument('-t',
                             dest = 'target',
                             type = str,
@@ -55,6 +55,11 @@ def get_cli_switches():
                             default = 46,
                             type = int,
                             help = 'set DSCP priority value (range: 0-63).')
+    cli_parser.add_argument('-i',
+                            dest = 'interval',
+                            default = 1,
+                            type = int,
+                            help = 'set interim delay betweeen messages (0 = no delay.')
     cli_parser.add_argument('-l',
                             dest = 'log',
                             action='store_true',
@@ -185,7 +190,7 @@ def santize_args(cli_args):
     else:
         args['port'] = cli_args['port']
 
-     # set repeat count
+    # set repeat count
     try:
         if not int(cli_args['count']) > 0:
             args['count'] = 5
@@ -194,7 +199,16 @@ def santize_args(cli_args):
     except:
         args['count'] = 5
     
-     # set dscp priority
+    # set interval
+    try:
+        if not int(cli_args['interval']) > -1:
+            args['interval'] = 1
+        else:
+            args['interval'] = cli_args['interval']
+    except:
+        args['interval'] = 1
+
+    # set dscp priority
     try:
         if (cli_args['dscp'] >= 0 and cli_args['dscp'] < 65):
             args['dscp'] = cli_args['dscp']
@@ -235,14 +249,16 @@ def send_packets(args):
         # send message to socket
         loopcount = 0
         while loopcount < args['count']:
-            msg = str(datetime.datetime.now()) + '; ' + host
+            msg = str(datetime.datetime.now()) + '; ' + host + '; DSCP: ' \
+                + str(args['dscp'])
             sock.sendto(msg.encode('utf-8'), (args['target'], args['port']))
             print('Sent message to {target}:{port}: "{message}."'
                   .format(target=args['target'], port=args['port'], message=msg))
             if args['log']:
                 sent_fh.write('{message}\n'
                     .format(message = msg ))
-            time.sleep(1)
+            if args['interval'] > 0:
+                time.sleep(args['interval'])
             loopcount += 1
 
         # Close the socket
