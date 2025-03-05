@@ -3,7 +3,7 @@
 # script: ipv4_dscp_test.py
 # author: jason mueller
 # created: 2025-02-18
-# last modified: 2025-03-04
+# last modified: 2025-03-05
 #
 # purpose:
 # Script to test basic send data with IP DSCP value set.
@@ -34,7 +34,7 @@ def get_cli_switches():
 
     cli_parser.add_argument('-v', '--version',
                             action = 'version',
-                            version = '%(prog)s 1.0.2')
+                            version = '%(prog)s 1.0.3')
     cli_parser.add_argument('-t',
                             dest = 'target',
                             type = str,
@@ -59,7 +59,11 @@ def get_cli_switches():
                             dest = 'interval',
                             default = 1,
                             type = int,
-                            help = 'set interim delay betweeen messages (0 = no delay.')
+                            help = 'set interim delay betweeen messages (0 = no delay).')
+    cli_parser.add_argument('-r',
+                            dest = 'receiver',
+                            action = 'store_true',
+                            help = 'set script to receive data.')
     cli_parser.add_argument('-l',
                             dest = 'log',
                             action='store_true',
@@ -175,11 +179,20 @@ def is_unpriv_port(port):
 # normalize provided CLI arguments
 def santize_args(cli_args):
     args = {}
-    
-    # verify multicast group
+
+   # check if script should execute as a UDP traffic receiver
+    if cli_args['receiver']:
+        args['receiver'] = True
+    else:
+        args['receiver'] = False
+
+    # verify target IP
     if not valid_ipv4_unicast(cli_args['target']): 
         args['target'] = False
-        print('Invalid target IP address provided:' + cli_args['target'] +  '.')
+        if (cli_args['target'] == None and args['receiver'] == False):
+            print('No target IP address provided.')
+        elif args['receiver'] == False:
+            print('Invalid target IP address provided:' + cli_args['target'] +  '.')
     else:
         args['target'] = cli_args['target']
 
@@ -224,7 +237,7 @@ def santize_args(cli_args):
     return args
 
 
-# send packet with DSCP set
+# send packets with DSCP set
 def send_packets(args):
     try:
         # assign hostname
@@ -267,12 +280,50 @@ def send_packets(args):
         print('Failed to send message.')
 
 
+# receive packets (purpose: avoid ICMP port unreachable response)
+def receive_packets(args):
+    try:
+        # create socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.bind(('', args['port']))
+
+        print('UDP listener for DSCP test invoked at {time}.'
+              .format(time=datetime.datetime.now()))
+        print('Listening for traffic on UDP port {port}.\n'
+              .format(port=args['port']))
+
+        if args['log']:
+            rcv_msgs_file = 'udp_rcv_message.txt'
+            rcv_fh = open(rcv_msgs_file, 'a')
+            print('\nUDP messages written to file: {file}.\n'
+                  .format(file=rcv_msgs_file))
+    
+         # print data received on socket
+        while True:
+            rcv_msg = sock.recv(1024)
+            rcv_time = datetime.datetime.now()
+            print('{timestamp}, received UDP message: "{message}"'
+                  .format(timestamp=rcv_time, message=str(rcv_msg)[2:-1]))
+        
+            if args['log']:
+                rcv_fh.write('{timestamp}: {message}\n'
+                    .format(timestamp = rcv_time, message = str(rcv_msg)[2:-1]))
+    
+    except:
+        if not KeyboardInterrupt:
+            print('\nScript exited due to an unexpected error.\n')
+            print('Script could not create listener socket.\n')
+
+
 def march_on_dunsinane():
     cli_args = get_cli_switches()
 
     args = santize_args(cli_args)
 
-    send_packets(args)        
+    if cli_args['receiver']:
+        receive_packets(args)
+    else:
+        send_packets(args)        
 
 
 if __name__ == '__main__':
